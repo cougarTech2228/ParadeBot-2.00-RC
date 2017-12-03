@@ -1,0 +1,12 @@
+Notation: what part of the robot it controls, what part on the controler controls it
+
+
+channel 1: nothing
+channel 2: right drive side, right stick
+channel 3: left drive side, left sitck
+channel 4: nothing
+channel 5: candy shooting which is done through the arduino, SWC (switch c, top right)
+channel 6: nothing
+
+
+**it's important to note that with the rc reciever (fly sky FS-T6) being used for the parade bot right now (now being th beginning of december), channels 1-4 are always controlled by the sticks and channels 5 and 6 are auxilary channels that can be controlled by any of the 4 switches on the controller. You can assign/map the switches to different channels through the controller interface. 
