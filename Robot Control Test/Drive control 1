@@ -1,0 +1,20 @@
+
+int ch2; //left stick, controls thrust
+int ch3; //right stick side to side, controls turning
+
+void setup() {
+ 
+  pinMode(2, INPUT);//thrust
+  pinMode(3, INPUT);//turn
+
+  Serial.begin(9600);
+}
+
+void loop() {
+
+  ch2 = pulseIn(2, HIGH);
+  ch3 = pulseIn(3, HIGH);
+
+  
+
+}
