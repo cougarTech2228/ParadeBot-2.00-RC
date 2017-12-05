@@ -15,11 +15,13 @@ For a servo:   0 is all the way one direction,
 Servo Right;//creates servo object for right side motors/motor controllers
 Servo Left;//creates servo object for left side motors/motor controllers
 
-int ch2; //left stick, controls thrust
+int ch2; //left stick, controls thrust 
 int ch3; //right stick side to side, controls turning
 
-int ch2Max = 1; //determine from calibration
-int ch3Max = 1; //determine from calibration
+
+int ch2Max = 1; // value determined from calibration, 1 is just a place holder. absolute value.
+int ch3Max = 1; // value determined from calibration, 1 is just a place holder. absolute value.
+
 
 
 //Candy shooting global variables
@@ -29,11 +31,16 @@ Servo CandyMotor; //Creates servo object for roatating motor to dispense candy
 int ch5; //input from channel 5 of RC reciever, which is controlled by SWC (Switch C), controls candy shooting
 
 boolean Shoot = false; //boolean to record state of shooting
-int RecordTime;
-char State = "off"; 
+int RecordTime; //stores time. used for delays
 
-boolean SpinMotor1 = false; //records whether or not motor is spinning 
-boolean CandyMotor1 = false; // records whether or not motor is spinning
+
+int ShootDuration = 2000; //sets the duration the robot shoots candy if just switched on and off in milliseconds.
+
+
+char State = "off"; // state in candy shooting sequence, starts in off and is in off whenever it isnt in the process of shooting
+
+boolean SpinMotor1 = false; //records whether or not Broadcast spreader motor is spinning 
+boolean CandyMotor1 = false; // records whether or not hopper/candy dispenser motor is rotating
 
 
 
@@ -41,9 +48,9 @@ boolean CandyMotor1 = false; // records whether or not motor is spinning
 void setup() {
 
   //input signal from RC reciever
-  pinMode(2, INPUT);//thrust
-  pinMode(3, INPUT);//turn
-  pinMode(4, INPUT); // Set pin 4 as input from RC reciever
+  pinMode(2, INPUT);//input of thrust (speed forward) level from controller
+  pinMode(3, INPUT);//turn (rotation) input level from controler
+  pinMode(4, INPUT); // Set pin 4 as input from RC reciever, controls 
 
   
   //outputs signal after its changed to motor controlers
@@ -59,17 +66,21 @@ void setup() {
 void loop() {
 
 
-  //reads input level from controler
-  ch2 = pulseIn(2, HIGH, 250000);//thrust
-  ch3 = pulseIn(3, HIGH, 250000);//turn
-  ch5 = pulseIn(4, HIGH, 250000); // Read the pulse width of incoming signal
+  //reads input level (incoming signal) from controler
+  ch2 = pulseIn(2, HIGH, 250000);//thrust amount
+  ch3 = pulseIn(3, HIGH, 250000);//turn amount
+  ch5 = pulseIn(4, HIGH, 250000); // binary control of candy shooter
+
+
   
   //prints out controler input in serial monitor
-  Serial.print("Channel 2:"); // Print the value of 
+  Serial.print("Channel 2:"); // Print the value of channel 2 (thrust)
   Serial.println(ch2);        // each channel
 
-  Serial.print("Channel 3:"); // Print the value of 
+  Serial.print("Channel 3:"); // Print the value of channel 3 (turn)
   Serial.println(ch3);        // each channel
+  //this is used for finding the max and min values for calibration
+
 
 
   int right; // used for storing input pulse values from reciever
@@ -89,8 +100,8 @@ void loop() {
   }
 
   //gives motors a value to rotate at
-  Right.write((right / ch2Max) * 90);
-  Left.write((left / ch2Max) * 90); 
+  Right.write(90 + ((right / ch2Max) * 90));
+  Left.write( 90 + ((left / ch2Max) * 90)); 
 
 
 
@@ -105,44 +116,45 @@ void loop() {
     Shoot = false; 
   }
 
-
+  //if the switch (SWC) is turned on and off quickly, the robot will shoot candy for a set amount of time. 
+  //Right now it is set for 2 seconds but it can be changed by modifying the value of the ShootDuration variable
 
 
   //Begin spining broadcast spreader, change state to startup
   if(Shoot == true && State == "off"){
-    SpinMotor.write(135);//number controls motor speed and direction
-    RecordTime = millis(); //records time when ececuted to be used for delay until desired time
-    State = "start up"; //changes state s
+    SpinMotor.write(135);//number controls motor speed and direction, begins spinng broadcast spreader motor
+    RecordTime = millis(); //records time when actuated to be used for delay until desired time
+    State = "start up"; //changes state 
   }
-
+  
   //start shooting candy
   else if(Shoot == true && State == "start up" && millis() >= RecordTime + 500 ){
-    CandyMotor.write(110); //number controls motor speed and direction
-    RecordTime = millis();
+    CandyMotor.write(110); //number controls motor speed and direction, turns on hopper motor, begins dispensing candy
+    RecordTime = millis(); //resets recorded time
     State = "shooting sequence";
   }
 
-   //continues shooting if switch is left on 
-   else if(Shoot == true && State == "shooting sequence" && millis() >= RecordTime + 2000 ){
+   //continues shooting if switch is left on after shooting duration has passed
+   else if(Shoot == true && State == "shooting sequence" && millis() >= (RecordTime + ShootDuration) ){
     RecordTime = millis();
     State = "continous shooting";
   }
 
-  //shut down, stop shooting if switch was just turned on and off rapidly
-  else if(Shoot == false && State == "shooting sequence" && millis() >= RecordTime + 2000 ){
+  //shut down, stop shooting if switch was just turned on and off rapidly and robot is only meant to shoot for set duration
+  else if(Shoot == false && State == "shooting sequence" && millis() >= RecordTime + ShootDuration){
     CandyMotor.write(90); //number controls motor speed and direction
     RecordTime = millis();
     State = "shut down";
   }
   
-  //stops shooting if robot was in continous shooting state 
+  //stops shooting (dispensing candy from hopper) if robot was in continous shooting state 
   else if(Shoot == false && State == "continous shooting" && millis() >= RecordTime){
     CandyMotor.write(90); //number controls motor speed and direction
     RecordTime = millis(); //reset timer
     State = "shut down"; //enters shutdown
   }
 
-  //turns off broadcastspreader motot, changes state to shutdown
+  //turns off broadcastspreader motor, changes state to shutdown
   else if(Shoot == false && State == "shut down" && millis() >= RecordTime + 500){
     SpinMotor.write(90); // turns off broadcast spreader
     State = "off"; //turns state to off
