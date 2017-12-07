@@ -22,6 +22,9 @@ int ch3; //right stick side to side, controls turning
 int ch2Max = 1; // value determined from calibration, 1 is just a place holder. absolute value.
 int ch3Max = 1; // value determined from calibration, 1 is just a place holder. absolute value.
 
+int ch2Neutral = 1;//neutral value of channel 2
+int ch3Neutral = 1;//neutral vlaue of channel 3
+
 
 
 //Candy shooting global variables
@@ -37,10 +40,12 @@ int RecordTime; //stores time. used for delays
 int ShootDuration = 2000; //sets the duration the robot shoots candy if just switched on and off in milliseconds.
 
 
-char State = "off"; // state in candy shooting sequence, starts in off and is in off whenever it isnt in the process of shooting
+String State = "off"; // state in candy shooting sequence, starts in off and is in off whenever it isnt in the process of shooting
 
 boolean SpinMotor1 = false; //records whether or not Broadcast spreader motor is spinning 
 boolean CandyMotor1 = false; // records whether or not hopper/candy dispenser motor is rotating
+
+
 
 
 
@@ -62,6 +67,10 @@ void setup() {
 
   Serial.begin(9600);
 }
+
+
+
+
 
 void loop() {
 
@@ -87,8 +96,8 @@ void loop() {
   int left;
 
   //calculates magnitude of value
-  right = ch2 - ch3; //right side turn mixing, combines thrust with amount you want to turn.
-  left =  ch2 + ch3; //left side turn mixing, combines thrust with amount you want to turn.
+  right = (ch2 - ch2Neutral) + (ch3 - ch3Neutral); //right side turn mixing, combines thrust with amount you want to turn.
+  left =  (ch2 - ch2Neutral) - (ch3 - ch3Neutral); //left side turn mixing, combines thrust with amount you want to turn. subtracts imput value from value in neutral position
 
   //limits speed/motor controller curent to safe (max) limits 
   if(right > ch2Max){
@@ -100,8 +109,8 @@ void loop() {
   }
 
   //gives motors a value to rotate at
-  Right.write(90 + ((right / ch2Max) * 90));
-  Left.write( 90 + ((left / ch2Max) * 90)); 
+  Right.write(90 + (right / ((ch2Max - ch2Neutral) * 90)));
+  Left.write( 90 + (left / ((ch2Max - ch2Neutral) * 90))); 
 
 
 
@@ -128,7 +137,7 @@ void loop() {
   }
   
   //start shooting candy
-  else if(Shoot == true && State == "start up" && millis() >= RecordTime + 500 ){
+  else if(State == "start up" && millis() >= RecordTime + 500 ){
     CandyMotor.write(110); //number controls motor speed and direction, turns on hopper motor, begins dispensing candy
     RecordTime = millis(); //resets recorded time
     State = "shooting sequence";
