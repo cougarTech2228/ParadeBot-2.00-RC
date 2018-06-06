@@ -1,0 +1,104 @@
+#include <Servo.h>
+/* The 'Servo.h' library allows you to control motors and servos by passing any value between
+0 and 180 into the "write" method (talon.write() in this program).
+For a motor:   0 is full power in one direction,
+             180 is full direction in the opposite direction,
+              90 is stop.
+For a servo:   0 is all the way one direction,
+             180 is all the way in the opposite direction,
+              90 is the middle.
+*/
+
+
+
+//Dirve global variables
+Servo Right;//creates servo object for right side motors/motor controllers
+Servo Left;//creates servo object for left side motors/motor controllers
+
+
+Servo SpinMotor; //creates servo object for spinning broadcast spreader
+Servo CandyMotor; //Creates servo object for roatating motor to dispense candy 
+
+
+int ch2; //Right stick, controls thrust 
+int ch3; //left stick side to side, controls turning 
+int ch5; //candy shooting bu not being used for now
+
+double ch2Max = 1960; // value determined from calibration, 
+double ch3Max = 1960; // value determined from calibration, 
+
+double ch2Neutral = 1476;//neutral value of channel 2, thrust
+double ch3Neutral = 1478;//neutral vlaue of channel 1, turning
+
+double ch2Prop = ch2Max - ch2Neutral; //width of output numbers, used for proportions
+
+
+
+void setup() {
+  
+  //input signal from RC reciever
+  pinMode(2, INPUT);//input of thrust (speed forward) level from controller
+  pinMode(4, INPUT);//turn (rotation) input level from controler
+  pinMode(6, INPUT); // Set pin 4 as input from RC reciever, controls 
+
+  
+  //outputs signal after its changed to motor controlers for motion
+  Right.attach(8);//controls right side
+  Left.attach(9);//controls left side
+
+  //attaches motors for candy shooting
+  SpinMotor.attach(11); 
+  CandyMotor.attach(10);
+
+  //starts accepting values at 9600 baud rate
+  Serial.begin(9600);
+}
+
+void loop() {
+  
+    // put your main code here, to run repeatedly:
+    ch2 = pulseIn(2, HIGH);//thrust amount
+    ch3 = pulseIn(4, HIGH);//turn amount
+    ch5 = pulseIn(6, HIGH); // binary control of candy shooter
+  
+    double right; // used for storing input pulse values from reciever
+    double left;
+  
+ 
+  //if controler is on and or the robot is recieving signal, do the following
+  if(ch2 > 500 && ch3 > 500){
+
+    
+      //takes raw thrust and turn values and turns them into a proportion to then be used to calculate value to send to motor controllers. 
+      double right = ((ch2 - ch2Neutral) - (ch3 - ch3Neutral)) / ch2Prop; //right side turn mixing, combines thrust with amount you want to turn.
+      double left =  ((ch2 - ch2Neutral) + (ch3 - ch3Neutral)) / ch2Prop; //left side turn mixing, combines thrust with amount you want to turn. subtracts imput value from value in neutral position
+    
+     //turns proportion into vlaue to send to motor controler on arduio 0-180 sevo control scale
+      int rightValue = 90 - (right * 45);
+      int leftValue =  90 + (left * 45);
+    
+      
+      //gives motors a value to rotate at
+      Right.write(rightValue);
+      Left.write(leftValue); 
+    
+      //if switch is turned on (input vlaue is great than 1200) candy shoots
+      if(ch5 > 1200){
+        SpinMotor.write(145);
+        CandyMotor.write(110);
+      }
+    
+      //if switch is off, candy stops shooting or stays not shooting
+      if(ch5 < 1200){
+        SpinMotor.write(90);
+        CandyMotor.write(90);
+      }
+
+  }
+
+   //stops robot if no signal is being recieved from controller
+  else{
+    Right.write(90);
+    Left.write(90);
+  }
+}
